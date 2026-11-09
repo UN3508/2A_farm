@@ -1,0 +1,971 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>학기 농장</title>
+<style>
+  :root{
+    color-scheme:light;
+    --bg:#F3EFE2; --card:#FFFDF7; --ink:#35342A; --muted:#777260; --line:#E2DAC3;
+    --green:#4F8A35; --green-d:#3B6E26; --red:#C8493B; --red-bg:#FBE9E5;
+    --amber:#B9791F; --amber-bg:#FCF1DC; --blue:#2F7FB5;
+    --duck:#2F7FB5; --garden:#4F8A35; --orchard:#C0692F;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR","Segoe UI",sans-serif;
+    line-height:1.5;font-size:15px}
+  button,input,select,textarea{font:inherit;color:inherit}
+  .wrap{max-width:1240px;margin:0 auto;padding:20px 16px 60px}
+
+  /* 헤더 */
+  .top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand h1{margin:0;font-size:28px;letter-spacing:-0.5px}
+  .brand .logo{width:44px;height:44px}
+  .top-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+  /* 버튼 */
+  .btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:600;
+    transition:background .15s,transform .05s}
+  .btn:hover{background:#F7F3E8}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:var(--green);border-color:var(--green);color:#fff}
+  .btn.primary:hover{background:var(--green-d)}
+  .btn.primary:disabled{background:#BDB8A6;border-color:#BDB8A6;cursor:not-allowed}
+  .btn.small{padding:4px 10px;font-size:13px;border-radius:8px}
+  .btn.ghost{background:transparent}
+  .btn.warn{background:var(--amber);border-color:var(--amber);color:#fff}
+  .link-btn{background:none;border:none;padding:2px 4px;cursor:pointer;color:var(--muted);font-size:13px;text-decoration:underline}
+  .link-btn.danger{color:var(--red)}
+  .icon-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:4px 8px;border-radius:8px}
+  .icon-btn:hover{background:#F1EBDA;color:var(--red)}
+
+  /* 과목 추가 */
+  .add-subject{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:20px}
+  .add-subject h2{margin:0 0 10px;font-size:18px}
+  .add-subject form{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+  .field{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--muted)}
+  .field input,.field select,.field textarea{font-weight:400;color:var(--ink)}
+  input[type=text],input[type=url],input[type=datetime-local],select,textarea{
+    border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 10px;min-width:0}
+  input:focus,select:focus,textarea:focus{outline:2px solid #B8D59E;border-color:var(--green)}
+  .add-subject .name-field{flex:1 1 220px}
+  .zone-pick{display:flex;gap:8px;flex-wrap:wrap}
+  .zone-pick label{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:10px;
+    padding:7px 12px;cursor:pointer;font-weight:600;color:var(--ink);font-size:14px}
+  .zone-pick input{accent-color:var(--green)}
+  .zone-pick label:has(input:checked){border-color:var(--green);background:#EEF5E6}
+  .zone-pick small{color:var(--muted);font-weight:400}
+
+  /* 빈 상태 */
+  .empty{text-align:center;padding:50px 16px;background:var(--card);border:1px dashed var(--line);border-radius:var(--radius)}
+  .empty svg{width:160px;height:auto;margin-bottom:8px}
+  .empty p{margin:4px 0}
+  .empty .big{font-size:18px;font-weight:700}
+  .empty .sub{color:var(--muted)}
+
+  /* 과목 카드 */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px;align-items:start}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;border-top:5px solid var(--zc)}
+  .zone-duck{--zc:var(--duck)} .zone-garden{--zc:var(--garden)} .zone-orchard{--zc:var(--orchard)}
+  .card-head{display:flex;justify-content:space-between;align-items:flex-start;padding:12px 14px 6px;gap:8px}
+  .card-head h2{margin:0;font-size:19px;word-break:break-word}
+  .zone-tag{display:inline-block;font-size:12px;font-weight:700;color:var(--zc);background:color-mix(in srgb,var(--zc) 12%,#fff);
+    padding:2px 8px;border-radius:99px;margin-top:3px}
+  .farm{padding:0 14px 12px}
+  .scene{border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#fff}
+  .scene svg{display:block;width:100%;height:auto}
+  .status{margin:8px 0 6px;font-size:14px;font-weight:600;min-height:21px}
+  .status.wait{color:var(--amber)}
+  .status.ready{color:var(--green)}
+
+  .stage-label{font-size:13px;color:var(--muted);display:flex;justify-content:space-between;margin-top:6px}
+  .stage-label b{color:var(--ink)}
+  .stages{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:4px 0 10px}
+  .stages div{font-size:11.5px;text-align:center;padding:4px 2px;border-radius:7px;background:#F1ECDD;color:var(--muted);line-height:1.3}
+  .stages div.on{background:color-mix(in srgb,var(--zc) 18%,#fff);color:var(--ink);font-weight:700}
+  .stages div.now{outline:2px solid var(--zc)}
+
+  .care-row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#F7F3E8;border-radius:10px;padding:8px 10px}
+  .res{font-size:14px}
+  .res b{font-size:18px}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .stats div{border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:#fff}
+  .stats span{display:block;font-size:12px;color:var(--muted)}
+  .stats b{font-size:17px}
+  details.records{margin-top:8px;font-size:13px}
+  details.records summary{cursor:pointer;color:var(--muted)}
+  details.records ol{margin:6px 0 0;padding-left:20px}
+
+  /* 과제 */
+  .tasks{border-top:1px solid var(--line);padding:12px 14px 14px;background:#FFFEFA}
+  .tasks-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .tasks-head h3{margin:0;font-size:16px}
+  .task-form{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff;display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+  .task-form textarea{resize:vertical}
+  .mats{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:0}
+  .mats legend{font-size:13px;font-weight:600;color:var(--muted);padding:0 4px}
+  .mat-head,.mat-row{display:grid;grid-template-columns:1fr 1.4fr 28px;gap:6px;align-items:center}
+  .mat-head{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:4px}
+  .mat-row{margin-bottom:6px}
+  .check{display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;font-weight:600}
+  .check input{accent-color:var(--green);width:16px;height:16px}
+  .check.small{font-size:12.5px;font-weight:500;color:var(--muted)}
+  .form-actions{display:flex;justify-content:flex-end;gap:8px}
+
+  .filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .filters button{border:1px solid var(--line);background:#fff;border-radius:99px;padding:3px 10px;font-size:12.5px;cursor:pointer}
+  .filters button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .filters button .n{opacity:.7;margin-left:3px}
+  .filters button.alert:not(.on){border-color:#E9B5AC;color:var(--red)}
+
+  .task-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+  .task{border:1px solid var(--line);border-radius:11px;padding:10px;background:#fff;display:flex;flex-direction:column;gap:6px}
+  .task.overdue{border-color:#E9B5AC;background:var(--red-bg)}
+  .task.done{background:#F4F7EF;border-color:#D3E2C3}
+  .task.done .t-title{text-decoration:line-through;color:var(--muted)}
+  .t-top{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .t-title{font-weight:700;word-break:break-word}
+  .badge{font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:99px;white-space:nowrap}
+  .b-over{background:var(--red);color:#fff}
+  .b-today{background:var(--amber-bg);color:var(--amber);border:1px solid #EBCB94}
+  .b-done{background:#DDEBCF;color:var(--green-d)}
+  .b-duetoday{background:#E4EFF8;color:var(--blue)}
+  .t-due{font-size:13px;color:var(--muted)}
+  .task.overdue .t-due{color:var(--red);font-weight:600}
+  .t-memo{font-size:13.5px;margin:0;white-space:pre-wrap;word-break:break-word;background:#FAF7EE;border-radius:8px;padding:6px 8px}
+  .t-mats{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+  .t-mats li{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13.5px}
+  .t-mats li span{word-break:break-all}
+  .t-mats a{text-decoration:none;white-space:nowrap;color:var(--blue);border-color:#BFD8EA}
+  .t-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:space-between;border-top:1px dashed var(--line);padding-top:6px}
+  .t-actions .left{display:flex;align-items:center;gap:8px}
+  .t-actions .right{display:flex;align-items:center;gap:10px}
+  .done-tag{font-size:13px;font-weight:700;color:var(--green-d)}
+  .no-task{font-size:13.5px;color:var(--muted);text-align:center;padding:12px 4px}
+
+  /* 모달 */
+  .overlay{position:fixed;inset:0;background:rgba(40,36,24,.45);display:flex;align-items:flex-start;justify-content:center;
+    padding:40px 16px;overflow:auto;z-index:50}
+  .overlay[hidden]{display:none}
+  .modal{background:var(--card);border-radius:16px;max-width:640px;width:100%;padding:18px;box-shadow:0 18px 50px rgba(0,0,0,.25)}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .modal-head h2{margin:0;font-size:20px}
+  .sum-table{width:100%;border-collapse:collapse;font-size:14px}
+  .sum-table th,.sum-table td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+  .sum-table th{font-size:12px;color:var(--muted)}
+  .sum-table .dates{font-size:12px;color:var(--muted)}
+  .modal-foot{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:14px}
+  .note{font-size:13px;color:var(--muted);margin:8px 0 0}
+  .archive{border:1px solid var(--line);border-radius:12px;background:#fff;margin-bottom:10px}
+  .archive summary{cursor:pointer;padding:10px 12px;font-weight:700;display:flex;justify-content:space-between;gap:8px}
+  .archive .inner{padding:0 12px 12px;overflow-x:auto}
+
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;
+    padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:60;max-width:calc(100% - 32px);text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .footnote{margin-top:24px;font-size:12.5px;color:var(--muted);text-align:center}
+
+  /* 애니메이션 */
+  .bob{animation:bob 2.4s ease-in-out infinite}
+  @keyframes bob{50%{transform:translateY(-2px)}}
+  .sway{transform-box:fill-box;transform-origin:50% 100%;animation:sway 3.2s ease-in-out infinite}
+  @keyframes sway{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
+  .zzz{animation:zz 2s ease-in-out infinite}
+  @keyframes zz{0%,100%{opacity:.2}50%{opacity:1}}
+  .pop{transform-box:fill-box;transform-origin:50% 100%;animation:pop .6s ease-out}
+  @keyframes pop{0%{transform:scale(.85)}60%{transform:scale(1.07)}100%{transform:scale(1)}}
+  @media (prefers-reduced-motion: reduce){.bob,.sway,.zzz,.pop{animation:none}}
+
+  @media (max-width:420px){
+    .grid{grid-template-columns:1fr}
+    .brand h1{font-size:24px}
+    .mat-head,.mat-row{grid-template-columns:1fr 1fr 28px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 48 48" aria-hidden="true">
+        <rect width="48" height="48" rx="12" fill="#4F8A35"/>
+        <path d="M24 38 V22" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+        <ellipse cx="17" cy="20" rx="8" ry="4.5" fill="#CDE8B0" transform="rotate(-30 17 20)"/>
+        <ellipse cx="31" cy="18" rx="8" ry="4.5" fill="#fff" transform="rotate(30 31 18)"/>
+        <rect x="10" y="37" width="28" height="4" rx="2" fill="#8B5E3C"/>
+      </svg>
+      <h1>학기 농장</h1>
+    </div>
+    <div class="top-actions">
+      <button class="btn warn" id="btnClose">학기 마무리</button>
+      <button class="btn" id="btnHistory">학기 기록</button>
+    </div>
+  </header>
+
+  <section class="add-subject" aria-labelledby="addTitle">
+    <h2 id="addTitle">과목 추가</h2>
+    <form id="subjectForm" autocomplete="off">
+      <label class="field name-field">과목명
+        <input type="text" name="name" maxlength="60" required>
+      </label>
+      <div class="field">농장 구역
+        <div class="zone-pick" role="radiogroup" aria-label="농장 구역">
+          <label><input type="radio" name="zone" value="duck" checked> 🦆 오리 사육장 <small>(사료)</small></label>
+          <label><input type="radio" name="zone" value="garden"> 🥕 텃밭 <small>(물)</small></label>
+          <label><input type="radio" name="zone" value="orchard"> 🍎 과수원 <small>(비료)</small></label>
+        </div>
+      </div>
+      <button type="submit" class="btn primary">과목 추가</button>
+    </form>
+  </section>
+
+  <div id="emptyState" class="empty" hidden>
+    <svg viewBox="0 0 200 110" aria-hidden="true">
+      <rect width="200" height="110" rx="14" fill="#EAF2DC"/>
+      <rect x="20" y="66" width="160" height="26" rx="8" fill="#8B5E3C"/>
+      <g stroke="#6B4429" stroke-width="2"><line x1="30" y1="79" x2="170" y2="79"/></g>
+      <path d="M100 74 V58" stroke="#4E9A3A" stroke-width="3" stroke-linecap="round"/>
+      <ellipse cx="93" cy="57" rx="8" ry="4" fill="#4E9A3A" transform="rotate(-25 93 57)"/>
+      <ellipse cx="107" cy="57" rx="8" ry="4" fill="#4E9A3A" transform="rotate(25 107 57)"/>
+    </svg>
+    <p class="big">등록된 과목이 없습니다.</p>
+    <p class="sub">과목을 추가하고 학기 농장을 시작해 보세요.</p>
+  </div>
+
+  <main id="grid" class="grid"></main>
+
+  <p class="footnote">과제를 늦게 하거나 한동안 접속하지 않아도 동식물은 죽거나 성장 단계가 줄어들지 않아요. 기록은 이 브라우저에 저장됩니다.</p>
+</div>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <h2 id="modalTitle"></h2>
+      <button class="icon-btn" id="modalX" aria-label="닫기">✕</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div class="overlay" id="cOverlay" hidden style="z-index:55">
+  <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="cMsg" style="max-width:420px">
+    <p id="cMsg" style="margin:0 0 6px;font-weight:600"></p>
+    <div class="modal-foot"><button class="btn" id="cNo">취소</button><button class="btn primary" id="cYes">확인</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+  var KEY = "semester-farm-v1";
+
+  var ZONES = {
+    duck:   { label:"오리 사육장", res:"사료", action:"사료 주기", finish:"사육 완료",
+              stages:["알","새끼 오리","어린 오리","다 자란 오리"] },
+    garden: { label:"텃밭", res:"물", action:"물 주기", finish:"수확",
+              stages:["씨앗","새싹","자라는 채소","수확 가능한 채소"] },
+    orchard:{ label:"과수원", res:"비료", action:"비료 주기", finish:"수확",
+              stages:["씨앗","묘목","꽃이 핀 나무","열매가 열린 나무"] }
+  };
+
+  /* ---------- 저장 ---------- */
+  var storageOk = true;
+  function load(){
+    try{
+      var raw = localStorage.getItem(KEY);
+      if(raw){
+        var s = JSON.parse(raw);
+        if(s && Array.isArray(s.subjects)){
+          if(!Array.isArray(s.archives)) s.archives = [];
+          return s;
+        }
+      }
+    }catch(e){ storageOk = false; }
+    return { subjects:[], archives:[] };
+  }
+  function save(){
+    try{ localStorage.setItem(KEY, JSON.stringify(state)); }
+    catch(e){
+      if(storageOk){ toast("이 브라우저에서는 저장이 되지 않을 수 있습니다."); }
+      storageOk = false;
+    }
+  }
+  var state = load();
+  var ui = {};      // 과목별 화면 상태 (필터, 애니메이션)
+  function uiOf(id){ return ui[id] || (ui[id] = { filter:"all", anim:false, timer:null }); }
+
+  /* ---------- 도구 ---------- */
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+  function esc(v){
+    return String(v == null ? "" : v).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function $(sel, root){ return (root||document).querySelector(sel); }
+  function findSubject(id){ for(var i=0;i<state.subjects.length;i++){ if(state.subjects[i].id===id) return state.subjects[i]; } return null; }
+  function findTask(s, tid){ for(var i=0;i<s.tasks.length;i++){ if(s.tasks[i].id===tid) return s.tasks[i]; } return null; }
+  function safeUrl(u){
+    u = (u||"").trim();
+    if(!u) return "";
+    if(!/^[a-z][a-z0-9+.\-]*:/i.test(u)) u = "https://" + u;
+    try{
+      var p = new URL(u);
+      if(["http:","https:","file:","mailto:"].indexOf(p.protocol) >= 0) return p.href;
+    }catch(e){}
+    return null;
+  }
+  var WD = ["일","월","화","수","목","금","토"];
+  function fmtDate(ms, withTime){
+    var d = new Date(ms), now = new Date();
+    var s = (d.getFullYear() !== now.getFullYear() ? d.getFullYear() + "년 " : "") +
+            (d.getMonth()+1) + "월 " + d.getDate() + "일 (" + WD[d.getDay()] + ")";
+    if(withTime !== false){
+      s += " " + String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
+    }
+    return s;
+  }
+  function sameDay(a, b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+  function isOverdue(t){ return !t.done && t.due && new Date(t.due).getTime() < Date.now(); }
+  function josa(word, a, b){ // 받침에 따라 조사 선택
+    var c = word.charCodeAt(word.length-1);
+    if(c < 0xAC00 || c > 0xD7A3) return word + b;
+    return word + (((c - 0xAC00) % 28) ? a : b);
+  }
+  var toastTimer;
+  function toast(msg){
+    var el = $("#toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.classList.remove("show"); }, 2400);
+  }
+
+  var cCb = null;
+  function askConfirm(msg, onYes){
+    $("#cMsg").textContent = msg;
+    cCb = onYes;
+    $("#cOverlay").hidden = false;
+    $("#cYes").focus();
+  }
+  function closeConfirm(){ $("#cOverlay").hidden = true; cCb = null; }
+  document.addEventListener("click", function(e){
+    if(e.target.id === "cYes"){ var f = cCb; closeConfirm(); if(f) f(); }
+    else if(e.target.id === "cNo" || e.target.id === "cOverlay"){ closeConfirm(); }
+  });
+
+  /* ---------- 그림 (SVG) ---------- */
+  function bgSVG(zone){
+    if(zone === "duck"){
+      return '<rect width="200" height="140" fill="#DDEFF7"/>' +
+        '<ellipse cx="40" cy="26" rx="18" ry="6" fill="#fff" opacity=".9"/><ellipse cx="52" cy="22" rx="12" ry="6" fill="#fff" opacity=".9"/>' +
+        '<rect y="96" width="200" height="44" fill="#9CCB6B"/>' +
+        '<ellipse cx="166" cy="120" rx="32" ry="10" fill="#7EC4E6"/><ellipse cx="160" cy="118" rx="12" ry="2" fill="#B6E0F2"/>' +
+        '<g stroke="#B08A5A" stroke-width="3" stroke-linecap="round">' +
+          '<line x1="10" y1="76" x2="10" y2="100"/><line x1="28" y1="76" x2="28" y2="100"/><line x1="46" y1="76" x2="46" y2="100"/>' +
+          '<line x1="4" y1="82" x2="52" y2="82"/><line x1="4" y1="92" x2="52" y2="92"/></g>';
+    }
+    if(zone === "garden"){
+      return '<rect width="200" height="140" fill="#EAF4DD"/>' +
+        '<circle cx="172" cy="24" r="12" fill="#F7D774"/>' +
+        '<rect y="90" width="200" height="50" fill="#A9D17B"/>' +
+        '<rect x="14" y="98" width="172" height="30" rx="9" fill="#8B5E3C"/>' +
+        '<g stroke="#6E4628" stroke-width="2" opacity=".8"><line x1="24" y1="113" x2="176" y2="113"/><line x1="24" y1="121" x2="176" y2="121"/></g>';
+    }
+    return '<rect width="200" height="140" fill="#F4EEDC"/>' +
+      '<circle cx="170" cy="26" r="13" fill="#F6C760"/>' +
+      '<ellipse cx="100" cy="156" rx="150" ry="48" fill="#A7CF78"/>' +
+      '<ellipse cx="30" cy="120" rx="10" ry="4" fill="#8FBF63"/><ellipse cx="172" cy="124" rx="12" ry="4" fill="#8FBF63"/>';
+  }
+
+  function duckSVG(stage, mode){
+    if(stage === 0){
+      return '<ellipse cx="95" cy="112" rx="28" ry="8" fill="#B7864F"/>' +
+        '<path d="M70 110 q25 10 50 0" stroke="#8E6235" stroke-width="2" fill="none"/>' +
+        '<g class="' + (mode==="feed" ? "pop" : "") + '"><ellipse cx="95" cy="98" rx="13" ry="17" fill="#FFF8E7" stroke="#C9B98F" stroke-width="1.5"/>' +
+        '<ellipse cx="90" cy="92" rx="3" ry="5" fill="#fff"/></g>';
+    }
+    var sc = [0, .55, .8, 1][stage];
+    var col  = stage===1 ? "#FFD84D" : stage===2 ? "#FFF1B8" : "#FFFFFF";
+    var wing = stage===1 ? "#F0C02E" : stage===2 ? "#E8D894" : "#E4E4E4";
+    var line = "#8A7A55";
+    var out = '<g transform="translate(95,112) scale(' + sc + ')">';
+    if(mode === "wait"){
+      // 누워서 쉬는 오리
+      out += '<ellipse cx="2" cy="-1" rx="30" ry="4" fill="#000" opacity=".12"/>' +
+        '<path d="M22 -14 L37 -22 L30 -5 Z" fill="' + col + '" stroke="' + line + '" stroke-width="1.5"/>' +
+        '<ellipse cx="2" cy="-12" rx="28" ry="12" fill="' + col + '" stroke="' + line + '" stroke-width="1.5"/>' +
+        '<ellipse cx="7" cy="-14" rx="15" ry="6.5" fill="' + wing + '"/>' +
+        '<circle cx="-24" cy="-15" r="11" fill="' + col + '" stroke="' + line + '" stroke-width="1.5"/>' +
+        '<ellipse cx="-37" cy="-11" rx="7.5" ry="3.2" fill="#F7A23B"/>' +
+        '<path d="M-31 -18 q3 3 6 0" stroke="#333" stroke-width="1.6" fill="none" stroke-linecap="round"/>' +
+        '<g class="zzz" fill="#5C6E8A" font-weight="700" font-family="sans-serif"><text x="-16" y="-32" font-size="11">z</text><text x="-8" y="-42" font-size="14">z</text></g>';
+    } else {
+      var headAnim = mode === "feed"
+        ? '<animateTransform attributeName="transform" type="rotate" values="0 -14 -32;-75 -14 -32;-58 -14 -32;-75 -14 -32;-58 -14 -32;-75 -14 -32;0 -14 -32" dur="1.8s" repeatCount="1"/>'
+        : '';
+      out += '<g class="' + (mode==="feed" ? "" : "bob") + '">' +
+        '<ellipse cx="2" cy="0" rx="24" ry="3.5" fill="#000" opacity=".12"/>' +
+        '<g stroke="#F08A24" stroke-width="3" stroke-linecap="round"><line x1="-6" y1="-14" x2="-6" y2="0"/><line x1="6" y1="-14" x2="6" y2="0"/>' +
+          '<line x1="-12" y1="0" x2="-4" y2="0"/><line x1="0" y1="0" x2="8" y2="0"/></g>' +
+        '<path d="M22 -30 L37 -41 L30 -21 Z" fill="' + col + '" stroke="' + line + '" stroke-width="1.5"/>' +
+        '<ellipse cx="2" cy="-26" rx="26" ry="16" fill="' + col + '" stroke="' + line + '" stroke-width="1.5"/>' +
+        '<ellipse cx="7" cy="-28" rx="14" ry="8" fill="' + wing + '"/>' +
+        '<g>' +
+          '<ellipse cx="-16" cy="-38" rx="8" ry="12" fill="' + col + '"/>' +
+          '<circle cx="-22" cy="-50" r="12" fill="' + col + '" stroke="' + line + '" stroke-width="1.5"/>' +
+          '<ellipse cx="-36" cy="-48" rx="8" ry="3.6" fill="#F7A23B"/>' +
+          '<circle cx="-25" cy="-53" r="2.2" fill="#222"/>' +
+          headAnim +
+        '</g></g>';
+    }
+    out += '</g>';
+    if(mode === "feed"){
+      // 사료 알갱이
+      var bx = 95 - 40*sc, pel = "";
+      [-8,-3,2,6,-5,4].forEach(function(dx, i){
+        pel += '<circle cx="' + (bx+dx) + '" cy="111" r="2.2" fill="#B07A3A" opacity="0">' +
+          '<animate attributeName="cy" values="60;111" dur="0.5s" begin="' + (i*0.08) + 's" fill="freeze"/>' +
+          '<animate attributeName="opacity" values="1;1;1;0" dur="1.9s" begin="' + (i*0.08) + 's" fill="freeze"/></circle>';
+      });
+      out += pel;
+    }
+    return out;
+  }
+
+  function plantSVG(stage, x, mode){
+    var L = mode === "wait" ? "#9DB36A" : "#4E9A3A";
+    var L2 = mode === "wait" ? "#B2C47F" : "#69B24E";
+    var g = "";
+    if(stage === 0){
+      g = '<ellipse cx="'+x+'" cy="108" rx="12" ry="4.5" fill="#6B4429"/>' +
+          '<ellipse cx="'+(x-3)+'" cy="106" rx="2.6" ry="1.8" fill="#E9D3A0"/><ellipse cx="'+(x+3)+'" cy="107" rx="2.6" ry="1.8" fill="#E9D3A0"/>';
+      return g;
+    }
+    if(stage === 1){
+      g = '<path d="M'+x+' 108 V95" stroke="'+L+'" stroke-width="2.5" stroke-linecap="round"/>' +
+          '<ellipse cx="'+(x-6)+'" cy="94" rx="6.5" ry="3.2" fill="'+L2+'" transform="rotate(-25 '+(x-6)+' 94)"/>' +
+          '<ellipse cx="'+(x+6)+'" cy="94" rx="6.5" ry="3.2" fill="'+L2+'" transform="rotate(25 '+(x+6)+' 94)"/>';
+    } else if(stage === 2){
+      g = '<path d="M'+x+' 108 V80" stroke="'+L+'" stroke-width="3" stroke-linecap="round"/>' +
+          '<ellipse cx="'+(x-9)+'" cy="99" rx="10" ry="4.2" fill="'+L+'" transform="rotate(-25 '+(x-9)+' 99)"/>' +
+          '<ellipse cx="'+(x+9)+'" cy="96" rx="10" ry="4.2" fill="'+L+'" transform="rotate(25 '+(x+9)+' 96)"/>' +
+          '<ellipse cx="'+(x-8)+'" cy="87" rx="9" ry="3.8" fill="'+L2+'" transform="rotate(-35 '+(x-8)+' 87)"/>' +
+          '<ellipse cx="'+(x+8)+'" cy="84" rx="9" ry="3.8" fill="'+L2+'" transform="rotate(35 '+(x+8)+' 84)"/>' +
+          '<ellipse cx="'+x+'" cy="78" rx="4" ry="6" fill="'+L2+'"/>';
+    } else {
+      g = '<g stroke="'+L+'" stroke-width="3" stroke-linecap="round" fill="none">' +
+            '<path d="M'+x+' 102 Q'+(x-6)+' 88 '+(x-12)+' 74"/><path d="M'+x+' 102 V68"/><path d="M'+x+' 102 Q'+(x+6)+' 88 '+(x+12)+' 74"/></g>' +
+          '<ellipse cx="'+(x-12)+'" cy="74" rx="5" ry="8" fill="'+L2+'" transform="rotate(-25 '+(x-12)+' 74)"/>' +
+          '<ellipse cx="'+x+'" cy="67" rx="5" ry="8" fill="'+L2+'"/>' +
+          '<ellipse cx="'+(x+12)+'" cy="74" rx="5" ry="8" fill="'+L2+'" transform="rotate(25 '+(x+12)+' 74)"/>' +
+          '<path d="M'+(x-10)+' 103 Q'+x+' 97 '+(x+10)+' 103 L'+(x+4)+' 120 Q'+x+' 124 '+(x-4)+' 120 Z" fill="#F08A24" stroke="#C96A14" stroke-width="1"/>' +
+          '<g stroke="#C96A14" stroke-width="1"><line x1="'+(x-5)+'" y1="108" x2="'+(x-1)+'" y2="108"/><line x1="'+(x+1)+'" y1="113" x2="'+(x+5)+'" y2="113"/></g>';
+    }
+    return '<g class="' + (mode === "wait" ? "" : (mode === "feed" ? "pop" : "sway")) + '">' + g + '</g>';
+  }
+
+  function gardenSVG(stage, mode){
+    var xs = [55,100,145], out = "";
+    xs.forEach(function(x){ out += plantSVG(stage, x, mode); });
+    if(mode === "feed"){
+      xs.forEach(function(x, i){
+        [-6,0,6].forEach(function(dx, j){
+          var b = (i*0.12 + j*0.18).toFixed(2);
+          out += '<ellipse cx="'+(x+dx)+'" cy="30" rx="2" ry="3.4" fill="#4FA3E0" opacity="0">' +
+            '<animate attributeName="cy" values="28;104" dur="0.8s" begin="'+b+'s" repeatCount="2"/>' +
+            '<animate attributeName="opacity" values="1;1;0" dur="0.8s" begin="'+b+'s" repeatCount="2"/></ellipse>';
+        });
+      });
+    }
+    return out;
+  }
+
+  function orchardSVG(stage, mode){
+    var L  = mode === "wait" ? "#93B163" : (stage === 3 ? "#3F8A33" : "#4E9A3A");
+    var L2 = mode === "wait" ? "#A9C27A" : (stage === 3 ? "#56A043" : "#66B04C");
+    var out = '<ellipse cx="100" cy="114" rx="24" ry="5.5" fill="#7A5236"/>';
+    var t = "";
+    if(stage === 0){
+      out += '<ellipse cx="100" cy="111" rx="4" ry="2.6" fill="#5A3A22"/>';
+      return out;
+    }
+    if(stage === 1){
+      t = '<path d="M100 114 V84" stroke="#8A5A35" stroke-width="4" stroke-linecap="round"/>' +
+          '<path d="M100 96 L92 88" stroke="#8A5A35" stroke-width="2.5" stroke-linecap="round"/>' +
+          '<ellipse cx="90" cy="86" rx="7" ry="4" fill="'+L2+'" transform="rotate(-30 90 86)"/>' +
+          '<ellipse cx="107" cy="83" rx="7" ry="4" fill="'+L2+'" transform="rotate(30 107 83)"/>' +
+          '<ellipse cx="100" cy="78" rx="4" ry="7" fill="'+L+'"/>';
+    } else {
+      t = '<path d="M95 114 L96 72 L104 72 L105 114 Z" fill="#8A5A35"/>' +
+          '<path d="M100 88 L84 72 M100 84 L116 70" stroke="#8A5A35" stroke-width="4" stroke-linecap="round"/>';
+      [[78,66,20],[122,66,20],[100,46,26],[100,70,22],[86,52,18],[114,52,18]].forEach(function(c, i){
+        t += '<circle cx="'+c[0]+'" cy="'+c[1]+'" r="'+c[2]+'" fill="'+(i%2 ? L2 : L)+'"/>';
+      });
+      var spots = [[80,60],[96,40],[112,48],[124,66],[90,72],[106,64],[72,72],[118,38],[100,56],[84,46]];
+      spots.forEach(function(p){
+        if(stage === 2){
+          t += '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="4" fill="#F6A5C0"/><circle cx="'+p[0]+'" cy="'+p[1]+'" r="1.5" fill="#FFF4C2"/>';
+        } else {
+          t += '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="5" fill="#E2463F"/><circle cx="'+(p[0]-1.6)+'" cy="'+(p[1]-1.6)+'" r="1.4" fill="#fff" opacity=".7"/>' +
+               '<path d="M'+p[0]+' '+(p[1]-5)+' l1.5 -3" stroke="#5A3A22" stroke-width="1.2"/>';
+        }
+      });
+    }
+    out += '<g class="' + (mode === "wait" ? "" : (mode === "feed" ? "pop" : "sway")) + '">' + t + '</g>';
+    if(mode === "feed"){
+      [-18,-10,-3,4,11,18].forEach(function(dx, i){
+        var b = (i*0.1).toFixed(2);
+        out += '<rect x="'+(100+dx)+'" y="70" width="3" height="3" rx="1" fill="#6B4A2A" opacity="0">' +
+          '<animate attributeName="y" values="64;110" dur="0.7s" begin="'+b+'s" repeatCount="2"/>' +
+          '<animate attributeName="opacity" values="1;1;0" dur="0.7s" begin="'+b+'s" repeatCount="2"/></rect>';
+      });
+    }
+    return out;
+  }
+
+  function sceneSVG(s, mode){
+    var z = ZONES[s.zone];
+    var body = s.zone === "duck" ? duckSVG(s.stage, mode) : s.zone === "garden" ? gardenSVG(s.stage, mode) : orchardSVG(s.stage, mode);
+    return '<svg viewBox="0 0 200 140" role="img" aria-label="' + esc(z.label + " " + z.stages[s.stage]) + '">' + bgSVG(s.zone) + body + '</svg>';
+  }
+
+  /* ---------- 상태 문구 ---------- */
+  function sceneMode(s){
+    if(uiOf(s.id).anim) return "feed";
+    if(s.resource < 1 && s.stage < 3) return "wait";
+    return "idle";
+  }
+  function statusInfo(s, mode){
+    var z = ZONES[s.zone];
+    if(mode === "feed"){
+      if(s.zone === "duck") return { cls:"ready", text:"일어나서 사료를 먹고 있어요!" };
+      if(s.zone === "garden") return { cls:"ready", text:"물을 듬뿍 마시고 있어요!" };
+      return { cls:"ready", text:"비료를 받아 쑥쑥 자라고 있어요!" };
+    }
+    if(s.stage >= 3){
+      return { cls:"ready", text:"다 자랐어요! ‘" + z.finish + "’를 눌러 기록을 남기고 새로 시작할 수 있어요." };
+    }
+    if(mode === "wait"){
+      if(s.zone === "duck") return { cls:"wait", text: s.stage === 0 ? "먹이를 기다리고 있어요. 과제를 완료하면 사료를 받아요." : "먹이를 기다리며 누워 쉬고 있어요. 과제를 완료하면 사료를 받아요." };
+      if(s.zone === "garden") return { cls:"wait", text:"물을 기다리고 있어요. 과제를 완료하면 물을 받아요." };
+      return { cls:"wait", text:"비료를 기다리고 있어요. 과제를 완료하면 비료를 받아요." };
+    }
+    return { cls:"", text:"‘" + z.action + "’를 눌러 돌봐 주세요." };
+  }
+
+  /* ---------- 카드 렌더링 ---------- */
+  function farmHTML(s){
+    var z = ZONES[s.zone];
+    var mode = sceneMode(s);
+    var st = statusInfo(s, mode);
+    var total = s.tasks.length;
+    var done = s.tasks.filter(function(t){ return t.done; }).length;
+    var stages = z.stages.map(function(name, i){
+      return '<div class="' + (i <= s.stage ? "on" : "") + (i === s.stage ? " now" : "") + '">' + esc(name) + '</div>';
+    }).join("");
+    var careBtn = s.stage >= 3
+      ? '<button class="btn primary" data-action="finish">' + z.finish + '</button>'
+      : '<button class="btn primary" data-action="care"' + (s.resource < 1 || uiOf(s.id).anim ? " disabled" : "") + '>' + z.action + '</button>';
+    var rec = "";
+    if(s.records.length){
+      rec = '<details class="records"><summary>' + z.finish + ' 기록 보기</summary><ol>' +
+        s.records.map(function(r, i){ return '<li>' + (i+1) + '번째 ' + z.finish + ' · ' + esc(fmtDate(r.at)) + '</li>'; }).join("") +
+        '</ol></details>';
+    }
+    return '<div class="scene">' + sceneSVG(s, mode) + '</div>' +
+      '<div class="status ' + st.cls + '">' + esc(st.text) + '</div>' +
+      '<div class="stage-label"><span>성장 단계</span><b>' + (s.stage+1) + ' / 4 · ' + esc(z.stages[s.stage]) + '</b></div>' +
+      '<div class="stages">' + stages + '</div>' +
+      '<div class="care-row"><span class="res">' + z.res + ' <b>' + s.resource + '</b>개</span>' + careBtn + '</div>' +
+      '<div class="stats">' +
+        '<div><span>완료한 과제</span><b>' + done + ' / ' + total + '</b></div>' +
+        '<div><span>' + z.finish + '</span><b>' + s.records.length + '회</b></div>' +
+      '</div>' + rec;
+  }
+
+  function matRowHTML(){
+    return '<div class="mat-row">' +
+      '<input type="text" name="matName" placeholder="자료 이름" aria-label="자료 이름" maxlength="80">' +
+      '<input type="text" name="matUrl" placeholder="자료 링크" aria-label="자료 링크" inputmode="url">' +
+      '<button type="button" class="icon-btn" data-action="del-mat" aria-label="자료 칸 삭제">✕</button></div>';
+  }
+
+  function taskFormHTML(){
+    return '<form class="task-form" data-form hidden autocomplete="off">' +
+      '<label class="field">과제 제목<input type="text" name="title" maxlength="120" required></label>' +
+      '<label class="field">마감일<input type="datetime-local" name="due"></label>' +
+      '<label class="field">요구사항 메모<textarea name="memo" rows="3"></textarea></label>' +
+      '<fieldset class="mats"><legend>관련 자료</legend>' +
+        '<div class="mat-head"><span>자료 이름</span><span>자료 링크</span><span></span></div>' +
+        '<div data-mats>' + matRowHTML() + '</div>' +
+        '<button type="button" class="btn small" data-action="add-mat">+ 자료 칸 추가</button></fieldset>' +
+      '<label class="check"><input type="checkbox" name="today"> 오늘 할 일</label>' +
+      '<div class="form-actions"><button type="button" class="btn ghost" data-action="toggle-form">취소</button>' +
+      '<button type="submit" class="btn primary">과제 추가</button></div></form>';
+  }
+
+  var FILTERS = [
+    { key:"all",   label:"전체",       fn:function(){ return true; } },
+    { key:"today", label:"오늘 할 일",  fn:function(t){ return t.today && !t.done; } },
+    { key:"open",  label:"미완료",      fn:function(t){ return !t.done; } },
+    { key:"over",  label:"마감 지남",   fn:isOverdue },
+    { key:"done",  label:"완료",        fn:function(t){ return t.done; } }
+  ];
+
+  function sortTasks(list){
+    return list.slice().sort(function(a, b){
+      if(a.done !== b.done) return a.done ? 1 : -1;
+      var da = a.due ? new Date(a.due).getTime() : Infinity;
+      var db = b.due ? new Date(b.due).getTime() : Infinity;
+      if(da !== db) return da - db;
+      return a.createdAt - b.createdAt;
+    });
+  }
+
+  function taskHTML(t){
+    var over = isOverdue(t), now = new Date();
+    var badges = "";
+    if(over) badges += '<span class="badge b-over">마감 지남</span>';
+    if(t.today && !t.done) badges += '<span class="badge b-today">오늘 할 일</span>';
+    if(!t.done && !over && t.due && sameDay(new Date(t.due), now)) badges += '<span class="badge b-duetoday">오늘 마감</span>';
+    if(t.done) badges += '<span class="badge b-done">완료</span>';
+    var mats = "";
+    if(t.materials && t.materials.length){
+      mats = '<ul class="t-mats">' + t.materials.map(function(m){
+        return '<li><span>📎 ' + esc(m.name) + '</span>' +
+          (m.url ? '<a class="btn small" href="' + esc(m.url) + '" target="_blank" rel="noopener noreferrer">자료 열기</a>' : '') + '</li>';
+      }).join("") + '</ul>';
+    }
+    var left = t.done
+      ? '<span class="done-tag">✓ 완료' + (t.doneAt ? ' · ' + esc(fmtDate(t.doneAt)) : '') + '</span>' +
+        '<button class="link-btn" data-action="undo" data-task="' + t.id + '">완료 취소</button>'
+      : '<button class="btn primary small" data-action="complete" data-task="' + t.id + '">완료</button>';
+    return '<li class="task' + (t.done ? " done" : "") + (over ? " overdue" : "") + '">' +
+      '<div class="t-top"><span class="t-title">' + esc(t.title) + '</span>' + badges + '</div>' +
+      '<div class="t-due">마감일 ' + (t.due ? esc(fmtDate(new Date(t.due).getTime())) : '미정') + '</div>' +
+      (t.memo ? '<p class="t-memo">' + esc(t.memo) + '</p>' : '') +
+      mats +
+      '<div class="t-actions"><div class="left">' + left + '</div>' +
+        '<div class="right"><label class="check small"><input type="checkbox" data-action="toggle-today" data-task="' + t.id + '"' + (t.today ? " checked" : "") + '> 오늘 할 일</label>' +
+        '<button class="link-btn danger" data-action="del-task" data-task="' + t.id + '">삭제</button></div></div>' +
+      '</li>';
+  }
+
+  function listHTML(s){
+    var u = uiOf(s.id);
+    var filterBtns = FILTERS.map(function(f){
+      var n = s.tasks.filter(f.fn).length;
+      return '<button type="button" data-action="filter" data-filter="' + f.key + '" class="' +
+        (u.filter === f.key ? "on" : "") + (f.key === "over" && n ? " alert" : "") + '">' + f.label + '<span class="n">' + n + '</span></button>';
+    }).join("");
+    var cur = FILTERS.filter(function(f){ return f.key === u.filter; })[0] || FILTERS[0];
+    var items = sortTasks(s.tasks.filter(cur.fn));
+    var body;
+    if(!s.tasks.length) body = '<li class="no-task">아직 등록된 과제가 없어요. ‘과제 추가’로 과제를 등록해 보세요.</li>';
+    else if(!items.length) body = '<li class="no-task">' + esc(cur.label) + ' 과제가 없어요.</li>';
+    else body = items.map(taskHTML).join("");
+    return '<div class="filters">' + filterBtns + '</div><ul class="task-list">' + body + '</ul>';
+  }
+
+  function cardEl(s){
+    var z = ZONES[s.zone];
+    var el = document.createElement("article");
+    el.className = "card zone-" + s.zone;
+    el.dataset.id = s.id;
+    el.innerHTML =
+      '<header class="card-head"><div><h2>' + esc(s.name) + '</h2><span class="zone-tag">' + z.label + '</span></div>' +
+      '<button class="icon-btn" data-action="del-subject" title="과목 삭제" aria-label="과목 삭제">✕</button></header>' +
+      '<div class="farm" data-farm>' + farmHTML(s) + '</div>' +
+      '<section class="tasks"><div class="tasks-head"><h3>과제</h3>' +
+        '<button class="btn small" data-action="toggle-form">과제 추가</button></div>' +
+        taskFormHTML() +
+        '<div data-list>' + listHTML(s) + '</div></section>';
+    return el;
+  }
+
+  function cardOf(id){ return document.querySelector('.card[data-id="' + id + '"]'); }
+  function renderFarm(s){ var c = cardOf(s.id); if(c) $("[data-farm]", c).innerHTML = farmHTML(s); }
+  function renderList(s){ var c = cardOf(s.id); if(c) $("[data-list]", c).innerHTML = listHTML(s); }
+  function updateEmpty(){ $("#emptyState").hidden = state.subjects.length > 0; }
+  function renderAll(){
+    var grid = $("#grid");
+    grid.innerHTML = "";
+    state.subjects.forEach(function(s){ grid.appendChild(cardEl(s)); });
+    updateEmpty();
+  }
+
+  /* ---------- 과목 추가 ---------- */
+  $("#subjectForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var f = e.target;
+    var name = f.name.value.trim();
+    var zone = (f.querySelector('input[name=zone]:checked') || {}).value;
+    if(!name){ toast("과목명을 입력해 주세요."); return; }
+    if(!ZONES[zone]){ toast("농장 구역을 선택해 주세요."); return; }
+    var s = { id:uid(), name:name, zone:zone, resource:0, stage:0, records:[], tasks:[], createdAt:Date.now() };
+    state.subjects.push(s);
+    save();
+    $("#grid").appendChild(cardEl(s));
+    updateEmpty();
+    f.name.value = "";
+    toast("‘" + name + "’ 과목의 " + ZONES[zone].label + "을 만들었어요.");
+  });
+
+  /* ---------- 카드 안의 동작 ---------- */
+  var grid = $("#grid");
+
+  grid.addEventListener("click", function(e){
+    var btn = e.target.closest("[data-action]");
+    if(!btn || btn.tagName === "INPUT") return;
+    var card = btn.closest(".card");
+    if(!card) return;
+    var s = findSubject(card.dataset.id);
+    if(!s) return;
+    var act = btn.dataset.action;
+    var z = ZONES[s.zone];
+
+    if(act === "del-subject"){
+      askConfirm("‘" + s.name + "’ 과목과 과제, 성장 상태를 모두 삭제할까요?", function(){
+        state.subjects = state.subjects.filter(function(x){ return x.id !== s.id; });
+        save(); card.remove(); updateEmpty();
+      });
+      return;
+    }
+    if(act === "toggle-form"){
+      var form = $("[data-form]", card);
+      form.hidden = !form.hidden;
+      if(!form.hidden) form.title.focus();
+      return;
+    }
+    if(act === "add-mat"){
+      $("[data-mats]", card).insertAdjacentHTML("beforeend", matRowHTML());
+      return;
+    }
+    if(act === "del-mat"){
+      var wrap = $("[data-mats]", card);
+      if(wrap.children.length > 1) btn.closest(".mat-row").remove();
+      else btn.closest(".mat-row").querySelectorAll("input").forEach(function(i){ i.value = ""; });
+      return;
+    }
+    if(act === "filter"){
+      uiOf(s.id).filter = btn.dataset.filter;
+      renderList(s);
+      return;
+    }
+    if(act === "care"){
+      if(s.resource < 1 || s.stage >= 3 || uiOf(s.id).anim) return;
+      s.resource -= 1;
+      s.stage += 1;
+      save();
+      var u = uiOf(s.id);
+      u.anim = true;
+      renderFarm(s);
+      clearTimeout(u.timer);
+      u.timer = setTimeout(function(){ u.anim = false; renderFarm(s); }, 1900);
+      if(s.stage >= 3) toast(z.stages[3] + "! 이제 ‘" + z.finish + "’할 수 있어요.");
+      return;
+    }
+    if(act === "finish"){
+      if(s.stage < 3) return;
+      s.records.push({ at:Date.now() });
+      s.stage = 0;
+      save();
+      renderFarm(s);
+      toast(z.finish + " 기록을 남겼어요. 새로운 성장 주기를 시작합니다.");
+      return;
+    }
+
+    var t = btn.dataset.task ? findTask(s, btn.dataset.task) : null;
+    if(!t) return;
+
+    if(act === "complete"){
+      if(t.done) return;
+      t.done = true;
+      t.doneAt = Date.now();
+      if(!t.rewarded){
+        t.rewarded = true;
+        s.resource += 1;
+        toast("과제 완료! " + josa(z.res, "을", "를") + " 1개 받았어요.");
+      } else {
+        toast("다시 완료했어요. 이 과제의 보상은 이미 받았어요.");
+      }
+      save(); renderFarm(s); renderList(s);
+      return;
+    }
+    if(act === "undo"){
+      t.done = false;
+      t.doneAt = null;
+      save(); renderFarm(s); renderList(s);
+      toast("완료를 취소했어요. 이미 받은 보상은 다시 받을 수 없어요.");
+      return;
+    }
+    if(act === "del-task"){
+      askConfirm("‘" + t.title + "’ 과제를 삭제할까요?", function(){
+        s.tasks = s.tasks.filter(function(x){ return x.id !== t.id; });
+        save(); renderFarm(s); renderList(s);
+      });
+    }
+  });
+
+  grid.addEventListener("change", function(e){
+    var el = e.target;
+    if(el.dataset.action !== "toggle-today") return;
+    var s = findSubject(el.closest(".card").dataset.id);
+    var t = s && findTask(s, el.dataset.task);
+    if(!t) return;
+    t.today = el.checked;
+    save(); renderList(s);
+  });
+
+  grid.addEventListener("submit", function(e){
+    var form = e.target.closest("[data-form]");
+    if(!form) return;
+    e.preventDefault();
+    var s = findSubject(form.closest(".card").dataset.id);
+    if(!s) return;
+    var title = form.title.value.trim();
+    if(!title){ toast("과제 제목을 입력해 주세요."); return; }
+    var materials = [], bad = false;
+    form.querySelectorAll(".mat-row").forEach(function(row){
+      var name = row.querySelector("[name=matName]").value.trim();
+      var raw  = row.querySelector("[name=matUrl]").value.trim();
+      if(!name && !raw) return;
+      var url = "";
+      if(raw){
+        url = safeUrl(raw);
+        if(url === null){ bad = true; row.querySelector("[name=matUrl]").focus(); return; }
+      }
+      materials.push({ name:name || raw, url:url });
+    });
+    if(bad){ toast("자료 링크 형식을 확인해 주세요. (예: https://...)"); return; }
+    var t = {
+      id:uid(), title:title, due:form.due.value || "", memo:form.memo.value.trim(),
+      materials:materials, today:form.today.checked, done:false, rewarded:false,
+      doneAt:null, createdAt:Date.now()
+    };
+    s.tasks.push(t);
+    save();
+    form.reset();
+    $("[data-mats]", form).innerHTML = matRowHTML();
+    form.hidden = true;
+    renderFarm(s); renderList(s);
+    toast("과제를 추가했어요.");
+  });
+
+  /* ---------- 모달 ---------- */
+  var overlay = $("#overlay");
+  function openModal(title, html){
+    $("#modalTitle").textContent = title;
+    $("#modalBody").innerHTML = html;
+    overlay.hidden = false;
+  }
+  function closeModal(){ overlay.hidden = true; }
+  $("#modalX").addEventListener("click", closeModal);
+  overlay.addEventListener("click", function(e){ if(e.target === overlay) closeModal(); });
+  document.addEventListener("keydown", function(e){ if(e.key !== "Escape") return; if(!$("#cOverlay").hidden) closeConfirm(); else if(!overlay.hidden) closeModal(); });
+
+  function summarize(subjects){
+    return subjects.map(function(s){
+      return {
+        name:s.name, zone:s.zone,
+        total:s.tasks.length,
+        done:s.tasks.filter(function(t){ return t.done; }).length,
+        records:s.records.map(function(r){ return r.at; }),
+        stage:s.stage
+      };
+    });
+  }
+  function summaryTable(rows){
+    return '<div style="overflow-x:auto"><table class="sum-table"><thead><tr><th>과목명</th><th>농장 구역</th><th>완료한 과제</th><th>수확 · 사육 완료</th><th>성장 단계</th></tr></thead><tbody>' +
+      rows.map(function(r){
+        var z = ZONES[r.zone];
+        var dates = r.records.length
+          ? '<div class="dates">' + r.records.map(function(at){ return esc(fmtDate(at, false)); }).join(", ") + '</div>' : '';
+        return '<tr><td><b>' + esc(r.name) + '</b></td><td>' + z.label + '</td><td>' + r.done + ' / ' + r.total + '</td>' +
+          '<td>' + z.finish + ' ' + r.records.length + '회' + dates + '</td><td>' + esc(z.stages[r.stage]) + '</td></tr>';
+      }).join("") + '</tbody></table></div>';
+  }
+
+  $("#btnClose").addEventListener("click", function(){
+    if(!state.subjects.length){
+      openModal("학기 마무리", '<p>등록된 과목이 없습니다.</p><p class="note">과목을 추가하고 학기 농장을 시작해 보세요.</p>' +
+        '<div class="modal-foot"><button class="btn" data-m="close">닫기</button></div>');
+      return;
+    }
+    var rows = summarize(state.subjects);
+    var tDone = rows.reduce(function(a, r){ return a + r.done; }, 0);
+    var tAll = rows.reduce(function(a, r){ return a + r.total; }, 0);
+    var tRec = rows.reduce(function(a, r){ return a + r.records.length; }, 0);
+    openModal("학기 마무리",
+      '<p>이번 학기 농장의 결과입니다. 완료한 과제 <b>' + tDone + ' / ' + tAll + '</b>, 수확 · 사육 완료 <b>' + tRec + '회</b></p>' +
+      summaryTable(rows) +
+      '<p class="note">‘학기 기록에 보관’을 누르면 지금 결과가 학기 기록에 저장됩니다.</p>' +
+      '<div class="modal-foot"><button class="btn" data-m="close">닫기</button><button class="btn primary" data-m="archive">학기 기록에 보관</button></div>');
+  });
+
+  $("#btnHistory").addEventListener("click", showHistory);
+  function showHistory(){
+    var list = state.archives.slice().reverse();
+    var html = list.length
+      ? list.map(function(a){
+          var done = a.subjects.reduce(function(x, r){ return x + r.done; }, 0);
+          var all = a.subjects.reduce(function(x, r){ return x + r.total; }, 0);
+          return '<details class="archive"><summary><span>' + esc(fmtDate(a.closedAt, false)) + ' 마무리한 학기</span>' +
+            '<span style="font-weight:500;color:var(--muted);font-size:13px">과목 ' + a.subjects.length + '개 · 완료한 과제 ' + done + '/' + all + '</span></summary>' +
+            '<div class="inner">' + summaryTable(a.subjects) +
+            '<div class="modal-foot"><button class="link-btn danger" data-m="del-archive" data-id="' + a.id + '">이 기록 삭제</button></div></div></details>';
+        }).join("")
+      : '<p class="note">보관된 학기 기록이 없습니다. ‘학기 마무리’에서 이번 학기 결과를 보관할 수 있어요.</p>';
+    openModal("학기 기록", html + '<div class="modal-foot"><button class="btn" data-m="close">닫기</button></div>');
+  }
+
+  $("#modalBody").addEventListener("click", function(e){
+    var b = e.target.closest("[data-m]");
+    if(!b) return;
+    var m = b.dataset.m;
+    if(m === "close"){ closeModal(); return; }
+    if(m === "archive"){
+      state.archives.push({ id:uid(), closedAt:Date.now(), subjects:summarize(state.subjects) });
+      save();
+      openModal("학기 마무리",
+        '<p><b>학기 기록에 보관했어요.</b> ‘학기 기록’에서 언제든 다시 볼 수 있어요.</p>' +
+        '<p class="note">새 학기를 시작하려면 현재 과목과 과제를 비울 수 있어요. 비우지 않으면 지금 농장이 그대로 유지됩니다.</p>' +
+        '<div class="modal-foot"><button class="btn" data-m="history">학기 기록 보기</button>' +
+        '<button class="btn" data-m="newterm">현재 과목 비우고 새 학기 시작</button>' +
+        '<button class="btn primary" data-m="close">닫기</button></div>');
+      return;
+    }
+    if(m === "history"){ showHistory(); return; }
+    if(m === "newterm"){
+      askConfirm("현재 과목, 과제, 자원과 성장 상태를 모두 비울까요? 보관한 학기 기록은 그대로 남아요.", function(){
+        state.subjects = [];
+        ui = {};
+        save(); renderAll(); closeModal();
+        toast("새 학기를 시작했어요.");
+      });
+      return;
+    }
+    if(m === "del-archive"){
+      var aid = b.dataset.id;
+      askConfirm("이 학기 기록을 삭제할까요? 되돌릴 수 없어요.", function(){
+        state.archives = state.archives.filter(function(a){ return a.id !== aid; });
+        save(); showHistory();
+      });
+    }
+  });
+
+  /* ---------- 시작 ---------- */
+  renderAll();
+  // 시간이 지나면 '마감 지남' 표시를 갱신
+  setInterval(function(){ state.subjects.forEach(renderList); }, 60000);
+})();
+</script>
+</body>
+</html>
